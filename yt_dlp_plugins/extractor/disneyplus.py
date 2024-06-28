@@ -184,6 +184,7 @@ class DisneyPlusIE(DisneyPlusBaseIE):
                 fmt['acodec'] = 'eac3'
             elif 'aac-' in fmt['format_id']:
                 fmt['acodec'] = 'aac'
+        self._remove_duplicate_formats(formats)
 
         # returns null if region code is incorrect
         dmc_data = self._download_dmc_json('DmcVideo', '/contentId/' + content_id, video_id=video_id)
