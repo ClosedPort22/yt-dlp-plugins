@@ -1,9 +1,16 @@
+import functools
+import json
 import re
 import uuid
-import json
-import functools
+
 from yt_dlp.extractor.common import InfoExtractor
-from yt_dlp.utils import traverse_obj, int_or_none, unified_strdate, parse_age_limit
+from yt_dlp.utils import (
+    int_or_none,
+    parse_age_limit,
+    traverse_obj,
+    unified_strdate,
+    url_or_none,
+)
 
 
 from yt_dlp import YoutubeDL
@@ -13,8 +20,7 @@ _old_urlopen = YoutubeDL.urlopen
 def _urlopen_patched(obj, req):
     # ignore HLS discontinuities
     resp = _old_urlopen(obj, req)
-    url = resp.url
-    if '.m3u8' not in url:
+    if '.m3u8' not in resp.url:
         return resp
 
     def read():
@@ -125,7 +131,7 @@ class DisneyPlusIE(DisneyPlusBaseIE):
         subtitles = []
         for source in traverse_obj(playback, ('stream', 'sources', ..., {
             'priority': ('priority', {int_or_none}),
-            'url': ('complete', 'url', {str}),
+            'url': ('complete', 'url', {url_or_none}),
             'id': ('complete', 'tracking', 'telemetry', 'cdn', {str}),
         })):
             fmts, subtitles = self._extract_m3u8_formats_and_subtitles(
@@ -144,13 +150,13 @@ class DisneyPlusIE(DisneyPlusBaseIE):
             start_millis = traverse_obj(milestones, 'intro_start', 'FFEI') or 0
             chapters.append({
                 'title': 'Intro',
-                'start_time': int(round(start_millis / 1000)),
-                'end_time': int(round(end_millis / 1000)),
+                'start_time': start_millis / 1000,
+                'end_time': end_millis / 1000,
             })
         if credits := milestones.get('FFEC'):
             chapters.append({
                 'title': 'Credits',
-                'start_time': int(round(credits / 1000)),
+                'start_time': credits / 1000,
             })
 
         bitrate_re = re.compile(r'r/composite_(\d+)k')
@@ -180,13 +186,14 @@ class DisneyPlusIE(DisneyPlusBaseIE):
             'season': ('text', 'title', 'full', 'season', 'default', 'content', {str}),
             'episode_number': ('episodeNumber', 'episodeSequenceNumber', {int_or_none}),
             'description': ('text', 'description', ('full', 'medium', 'brief'), 'program', 'default', 'content', {str}, any),
+            # 'creators': ('participant', ('Creator', 'Director', 'Producer'), ..., 'displayName', {str}),
             'creators': ('participant', 'Creator', ..., 'displayName', {str}),
             'age_limit': ('ratings', ..., 'value', {parse_age_limit}, any),
             'release_date': ('releases', ..., 'releaseDate', {unified_strdate}, any),
             'thumbnails': ('image', 'thumbnail', {dict.values}, ..., 'program', 'default', {
                 'width': ('masterWidth', {int_or_none}),
                 'height': ('masterHeight', {int_or_none}),
-                'url': ('url', {str}),
+                'url': ('url', {url_or_none}),
             }),
         }))
 
