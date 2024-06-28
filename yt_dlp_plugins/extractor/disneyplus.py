@@ -168,6 +168,11 @@ class DisneyPlusIE(DisneyPlusBaseIE):
         bitrate_re = re.compile(r'r/composite_(\d+)k')
         for fmt in formats:
             if fmt.get('vcodec') != 'none':
+                url = fmt['url']
+                if 'HDR_DOLBY_VISION' in url:
+                    fmt['dynamic_range'] = 'DV'
+                elif 'HDR_HDR10' in url:
+                    fmt['dynamic_range'] = 'HDR10'
                 continue
             # audio tracks do not have DRM
             fmt['has_drm'] = False
