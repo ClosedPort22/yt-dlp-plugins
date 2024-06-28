@@ -128,7 +128,7 @@ class DisneyPlusIE(DisneyPlusBaseIE):
             video_id=video_id, headers=self._BAMSDK_HEADERS, data=json.dumps(data).encode())
 
         formats = []
-        subtitles = []
+        subtitles = {}
         for source in traverse_obj(playback, ('stream', 'sources', ..., {
             'priority': ('priority', {int_or_none}),
             'url': ('complete', 'url', {url_or_none}),
@@ -138,6 +138,12 @@ class DisneyPlusIE(DisneyPlusBaseIE):
                 source['url'], video_id=video_id, preference=-(source['priority'] or 0), m3u8_id=source['id'],
                 headers={'Authorization': ''})
             formats.extend(fmts)
+
+        type_re = re.compile(r'r/composite_[^_]+_(?P<type>[a-zA-Z]+)')
+        for subs in subtitles.values():
+            for sub in subs:
+                if mobj := type_re.search(sub['url']):
+                    sub['name'] = mobj.group('type')
 
         # parse chapters
         milestones = {}
