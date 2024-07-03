@@ -136,7 +136,7 @@ class DisneyPlusIE(DisneyPlusBaseIE):
         })):
             fmts, subtitles = self._extract_m3u8_formats_and_subtitles(
                 source['url'], video_id=video_id, preference=-(source['priority'] or 0), m3u8_id=source['id'],
-                headers={'Authorization': ''})
+                ext='mp4', headers={'Authorization': ''})
             formats.extend(fmts)
 
         type_re = re.compile(r'r/composite_[^_]+_(?P<type>[a-zA-Z]+)')
@@ -174,8 +174,14 @@ class DisneyPlusIE(DisneyPlusBaseIE):
                 elif 'HDR_HDR10' in url:
                     fmt['dynamic_range'] = 'HDR10'
                 continue
+
             # audio tracks do not have DRM
             fmt['has_drm'] = False
+
+            # deprioritize audio description tracks
+            if 'description' in (fmt.get('format_note') or '').lower():
+                fmt['language_preference'] = -10
+
             if not fmt.get('abr') and (mobj := bitrate_re.search(fmt['url'])):
                 fmt['abr'] = int(mobj.group(1))
             if fmt.get('acodec'):
