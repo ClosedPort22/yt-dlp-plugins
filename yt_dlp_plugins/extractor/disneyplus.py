@@ -200,6 +200,8 @@ class DisneyPlusIE(DisneyPlusBaseIE):
             'description': ('text', 'description', ('full', 'medium', 'brief'), 'program', 'default', 'content', {str}, any),
             # 'creators': ('participant', ('Creator', 'Director', 'Producer'), ..., 'displayName', {str}),
             'creators': ('participant', 'Creator', ..., 'displayName', {str}),
+            'cast': ('participant', 'Actor', ..., 'displayName', {str}),
+            'categories': ('typedGenres', ..., 'name', {str}),
             'age_limit': ('ratings', ..., 'value', {parse_age_limit}, any),
             'release_date': ('releases', ..., 'releaseDate', {unified_strdate}, any),
             'thumbnails': ('image', 'thumbnail', {dict.values}, ..., 'program', 'default', {
