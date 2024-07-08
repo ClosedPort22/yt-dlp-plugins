@@ -13,20 +13,31 @@ from yt_dlp.utils import (
     variadic,
 )
 
-# temporary fix for yt-dlp not being able to parse time expressions like '1:20.908'
+# Apple uses non-standard time expressions in TTML lyrics such as '1:20.908',
+# which yt-dlp cannot handle
+# Ref:
+# https://www.w3.org/TR/2005/WD-ttaf1-dfxp-20050321/#timing-value-timeExpression
+# https://www.w3.org/TR/2018/REC-ttml1-20181108/#timing-value-timeExpression
 
 
 def _parse_dfxp_time_expr_fix(time_expr):
     if not time_expr:
-        return
+        return None
 
-    mobj = re.match(rf'^(?P<time_offset>{NUMBER_RE})s?$', time_expr)
-    if mobj:
+    if mobj := re.match(rf'^(?P<time_offset>{NUMBER_RE})s?$', time_expr):
         return float(mobj.group('time_offset'))
 
-    mobj = re.match(r'^(?:(\d+):)?(\d{1,2}):(\d\d(?:(?:\.|:)\d+)?)$', time_expr)
-    if mobj:
+    if mobj := re.match(r'^(?:(\d+):)?(\d{1,2}):(\d\d(?:(?:\.|:)\d+)?)$', time_expr):
         return 3600 * int(mobj.group(1) or 0) + 60 * int(mobj.group(2)) + float(mobj.group(3).replace(':', '.'))
+
+    return None
+
+
+assert _parse_dfxp_time_expr_fix('00:01') == 1.0
+assert _parse_dfxp_time_expr_fix('00:01:100') == 1.1
+assert _parse_dfxp_time_expr_fix('00:01.100') == 1.1
+assert _parse_dfxp_time_expr_fix('1:01:100') == 61.1
+assert _parse_dfxp_time_expr_fix('1:01.100') == 61.1
 
 
 dfxp2srt.__globals__['parse_dfxp_time_expr'] = _parse_dfxp_time_expr_fix
