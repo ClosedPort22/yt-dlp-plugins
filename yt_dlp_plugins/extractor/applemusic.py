@@ -6,6 +6,7 @@ from yt_dlp.utils import (
     NUMBER_RE,
     dfxp2srt,
     int_or_none,
+    parse_codecs,
     parse_qs,
     traverse_obj,
     unified_strdate,
@@ -50,6 +51,22 @@ class AppleMusicBaseIE(InfoExtractor):
     _SUPPRESS_AUTH = {'Authorization': '', 'Media-User-Token': ''}
     _SUPPRESS_USER_AUTH = {'Media-User-Token': ''}
     _api_headers = {'Origin': 'https://music.apple.com'}
+
+    def __init__(self, downloader=None):
+        super().__init__(downloader)
+
+        def parse_codecs_patched(codecs_str):
+            if codecs_str == 'alac':
+                return {
+                    'vcodec': 'none',
+                    'acodec': codecs_str,
+                    'dynamic_range': None,
+                }
+            return parse_codecs(codecs_str)
+
+        # workaround for yt-dlp's format parser not recognizing 'alac'
+        # (the selector does recognize it)
+        self._parse_m3u8_formats_and_subtitles.__globals__['parse_codecs'] = parse_codecs_patched
 
     @functools.cached_property
     def _MAX_THUMBNAIL_WIDTH(self):
@@ -170,16 +187,12 @@ class AppleMusicIE(AppleMusicBaseIE):
             query=self._get_lang_query(url))
         song = traverse_obj(resp, ('data', ..., any))
 
+        # Unfortunately, due to the extreme complexity of '_parse_m3u8_formats_and_subtitles',
+        # it's impossible to extract some useful info (such as channel, asr and whether the
+        # track is Dolby Atmos or not) wthout re-implementing the entire method
         formats = self._extract_m3u8_formats(
             traverse_obj(song, ('attributes', 'extendedAssetUrls', 'enhancedHls')),
             video_id=song_id, headers=self._SUPPRESS_AUTH)
-        # workaround for yt-dlp's format parser not recognizing 'alac'
-        # (the selector does recognize it)
-        for f in formats:
-            if not f.get('acodec') and 'alac' in (f.get('url') or ''):
-                f['acodec'] = 'alac'
-                f['vcodec'] = f['video_ext'] = 'none'
-                f['ext'] = f['audio_ext'] = 'm4a'
 
         metadata = {
             'id': song_id,
