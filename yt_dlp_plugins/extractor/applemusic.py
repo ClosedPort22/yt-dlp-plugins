@@ -9,6 +9,7 @@ from yt_dlp.utils import (
     parse_qs,
     traverse_obj,
     unified_strdate,
+    url_or_none,
     variadic,
 )
 
@@ -46,6 +47,12 @@ class AppleMusicBaseIE(InfoExtractor):
     @functools.cached_property
     def _MAX_THUMBNAIL_HEIGHT(self):
         return self._configuration_arg('max_thumbnail_height', ['12000'])[0]
+
+    @staticmethod
+    def _get_lang_query(url):
+        if lang := parse_qs(url).get('l'):
+            return {'l': lang[0]}
+        return None
 
     def _get_anonymous_token(self, video_id):
         webpage = self._download_webpage('https://beta.music.apple.com/', video_id, 'Retrieving anonymous token')
@@ -149,7 +156,7 @@ class AppleMusicIE(AppleMusicBaseIE):
         resp = self._download_api_json(
             f'https://amp-api.music.apple.com/v1/catalog/{region}/songs/{song_id}?extend=extendedAssetUrls&include=albums,genres',
             video_id=song_id, headers=self._SUPPRESS_USER_AUTH,
-            query={'l': l[0]} if (l := parse_qs(url).get('l')) else None)
+            query=self._get_lang_query(url))
         song = traverse_obj(resp, ('data', ..., any))
 
         formats = self._extract_m3u8_formats(
@@ -204,20 +211,16 @@ class AppleMusicAlbumIE(AppleMusicBaseIE):
 
     def _real_extract(self, url):
         region, album_id = self._match_valid_url(url).groups()
-        lang = l[0] if (l := parse_qs(url).get('l')) else None
-        query = {'l': lang} if lang else None
-        query_str = f'&l={lang}' if lang else ''
 
         resp = self._download_api_json(
             f'https://amp-api.music.apple.com/v1/catalog/{region}/albums/{album_id}?include=tracks',
-            video_id=album_id, headers=self._SUPPRESS_USER_AUTH, query=query)
+            video_id=album_id, headers=self._SUPPRESS_USER_AUTH, query=self._get_lang_query(url))
         album = traverse_obj(resp, ('data', ..., any))
 
         return {
             '_type': 'playlist',
-            'entries': [self.url_result(
-                f'https://music.apple.com/{region}/album/_/{album_id}?i={song_id}{query_str}', AppleMusicIE)
-                for song_id in traverse_obj(album, ('relationships', 'tracks', 'data', ..., 'id', {str}))],
+            'entries': [self.url_result(song_url, AppleMusicIE) for song_url in
+                        traverse_obj(album, ('relationships', 'tracks', 'data', ..., 'attributes', 'url', {url_or_none}))],
             'id': album_id,
             **self._extract_common_metadata(album),
             **self._extract_album_metadata(album),
