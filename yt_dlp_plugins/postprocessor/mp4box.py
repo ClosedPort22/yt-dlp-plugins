@@ -31,7 +31,7 @@ class MP4BoxPP(PostProcessor):
         if not (filepath := info.get('filepath')):
             return [], info
         # mp4box replaces the input file by default
-        # max length 32768 is characters on Windows
+        # max length for command line is 32768 characters on Windows
         cmd = [self._path, *self._configuration_args('mp4box'),
                *self._yield_opts(info), filepath]
 
@@ -79,7 +79,7 @@ class MP4BoxPP(PostProcessor):
             # https://github.com/quodlibet/mutagen/issues/391
             m4a[f'----:com.apple.iTunes:{key}'] = value.encode()
 
-        # integer tags unsupported by mp4box
+        # integer tags unrecognized by mp4box
         for key, value in traverse_obj(info, {
             'plID': (m('album_id'), {int_or_none}),
             'cnID': (m('id'), {int_or_none}),

@@ -145,7 +145,7 @@ class AppleMusicBaseIE(InfoExtractor):
             'upc': ('upc', {str}),
             'record_label': ('recordLabel', {str}),
             'copyright': ('copyright', {str}),
-            # not necessarily equals to the number of tracks returned, since
+            # this doesn't necessarily equal to the number of tracks returned, since
             # some tracks may be unavailable
             'track_count': ('trackCount', {int_or_none}),
         }))

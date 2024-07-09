@@ -1,4 +1,4 @@
-import functools
+import functools  # noqa: I001
 import json
 import re
 import uuid
@@ -18,18 +18,18 @@ _old_urlopen = YoutubeDL.urlopen
 
 
 def _urlopen_patched(obj, req):
-    # ignore HLS discontinuities
     resp = _old_urlopen(obj, req)
-    if '.m3u8' not in resp.url:
+    # the patch will be in effect as long as this file is imported, so
+    # we try to limit it to only Disney+ URLs
+    if '.m3u8' not in resp.url or "r/composite_" not in resp.url:
         return resp
 
     def read():
         def readlines(response):
             for line in response.fp:
-                if b"DISCONTINUITY" in line:
+                if line.startswith(b'#EXT-X-DISCONTINUITY'):
                     obj.report_warning(
-                        'Initialization fragment found after media fragments, '
-                        'ignoring the rest of the playlist')
+                        'Ignoring the rest of the playlist due to #EXT-X-DISCONTINUITY')
                     response.close()
                     return
                 yield line
