@@ -247,8 +247,7 @@ class AppleMusicAlbumIE(AppleMusicBaseIE):
             thumbnails.append(self._extract_thumbnail(data.get('previewFrame')))
 
         if not formats:
-            self.raise_no_formats(
-                'This album does not have an animated cover', expected=True, video_id=video_id)
+            return {}
 
         for f in formats:
             f['url'] = re.sub(r'-?\.m3u8', '-.mp4', f['url'])
@@ -274,18 +273,22 @@ class AppleMusicAlbumIE(AppleMusicBaseIE):
             **self._extract_album_metadata(album),
         }
 
-        animated_cover = {
-            **metadata,
-            **self._extract_animated_cover(album, video_id=album_id),
-            'http_headers': self._SUPPRESS_AUTH,
-        }
+        if cover_data := self._extract_animated_cover(album, video_id=album_id):
+            animated_cover = {
+                **metadata,
+                **cover_data,
+                'http_headers': self._SUPPRESS_AUTH,
+            }
+            if not self._yes_playlist(
+                    True, True, playlist_label='both the animated cover and the album',
+                    video_label='animated album cover'):
+                return animated_cover
 
-        if not self._yes_playlist(
-                True, True, playlist_label='both the animated cover and the album',
-                video_label='animated album cover'):
-            return animated_cover
+            entries = [animated_cover]
+        else:
+            self.to_screen('This album does not have an animated cover')
+            entries = []
 
-        entries = [animated_cover]
         entries.extend(
             self.url_result(song_url, AppleMusicIE) for song_url in
             traverse_obj(album, ('relationships', 'tracks', 'data', ..., 'attributes', 'url', {url_or_none})))
