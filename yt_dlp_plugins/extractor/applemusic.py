@@ -115,13 +115,13 @@ class AppleMusicBaseIE(InfoExtractor):
                                    headers={**self._api_headers, **headers}, **kwargs)
 
     def _extract_thumbnail(self, obj):
-        return traverse_obj(obj, ('attributes', 'artwork', {
-            'url': ('url', {str}, {lambda x: x.replace(
+        return traverse_obj(obj, {
+            'url': ('url', {url_or_none}, {lambda x: x.replace(
                     '{w}x{h}', f'{self._MAX_THUMBNAIL_WIDTH}x{self._MAX_THUMBNAIL_HEIGHT}')}),
             # XXX: remove these if max width/height is specified?
             'width': ('width', {int_or_none}),
             'height': ('height', {int_or_none}),
-        }))
+        })
 
     @staticmethod
     def _extract_common_metadata(obj):
@@ -205,13 +205,14 @@ class AppleMusicIE(AppleMusicBaseIE):
                 'track': ('name', {str}),
                 'track_number': ('trackNumber', {int_or_none}),
                 'track_id': ('playParams', 'id', {str}),
+                'media_type': ('playParams', 'kind', {str}),
                 'disc_number': ('discNumber', {int_or_none}),
                 'duration': ('durationInMillis', {int_or_none}, {lambda x: x / 1000}),
                 # not part of yt-dlp
                 'isrc': ('isrc', {str}),
             })),
             'formats': formats,
-            'thumbnails': [self._extract_thumbnail(song)],
+            'thumbnails': [self._extract_thumbnail(traverse_obj(song, ('attributes', 'artwork')))],
             'subtitles': (self._extract_lyrics(region, song_id)
                           if traverse_obj(song, ('attributes', 'hasLyrics', {bool})) else []),
             'http_headers': self._SUPPRESS_AUTH,
@@ -233,22 +234,64 @@ class AppleMusicIE(AppleMusicBaseIE):
 class AppleMusicAlbumIE(AppleMusicBaseIE):
     _VALID_URL = AppleMusicBaseIE._VALID_URL_BASE + r'(?:(?!(?:\?|&)i=[0-9]+).)*$'
 
+    def _extract_animated_cover(self, album, video_id):
+        formats = []
+        thumbnails = []
+
+        seen = set()  # remove duplicate URLs
+        for name, data in traverse_obj(
+            album, ('attributes', 'editorialVideo', {dict.items},
+                    lambda _, v: not (v[1]['video'] in seen or seen.add(v[1]['video'])))):
+            formats.extend(self._extract_m3u8_formats(
+                data.get('video'), video_id=video_id, m3u8_id=name, headers=self._SUPPRESS_AUTH))
+            thumbnails.append(self._extract_thumbnail(data.get('previewFrame')))
+
+        for f in formats:
+            f['url'] = re.sub(r'-?\.m3u8', '-.mp4', f['url'])
+            f['protocol'] = 'http'
+
+        return {
+            'id': video_id,
+            'formats': formats,
+            'thumbnails': thumbnails,
+            'media_type': 'editorialVideo',
+        }
+
     def _real_extract(self, url):
         region, album_id = self._match_valid_url(url).groups()
 
         resp = self._download_api_json(
-            f'https://amp-api.music.apple.com/v1/catalog/{region}/albums/{album_id}?include=tracks',
+            f'https://amp-api.music.apple.com/v1/catalog/{region}/albums/{album_id}?include=tracks&extend=editorialVideo',
             video_id=album_id, headers=self._SUPPRESS_USER_AUTH, query=self._get_lang_query(url))
         album = traverse_obj(resp, ('data', ..., any))
 
-        return {
-            '_type': 'playlist',
-            'entries': [self.url_result(song_url, AppleMusicIE) for song_url in
-                        traverse_obj(album, ('relationships', 'tracks', 'data', ..., 'attributes', 'url', {url_or_none}))],
-            'id': album_id,
+        metadata = {
             **self._extract_common_metadata(album),
             **self._extract_album_metadata(album),
-            'thumbnails': [self._extract_thumbnail(album)],
+        }
+
+        animated_cover = {
+            **metadata,
+            **self._extract_animated_cover(album, video_id=album_id),
+            'http_headers': self._SUPPRESS_AUTH,
+        }
+
+        if not self._yes_playlist(
+                True, True, playlist_label='both the animated cover and the album',
+                video_label='animated album cover'):
+            return animated_cover
+
+        entries = [animated_cover]
+        entries.extend(
+            self.url_result(song_url, AppleMusicIE) for song_url in
+            traverse_obj(album, ('relationships', 'tracks', 'data', ..., 'attributes', 'url', {url_or_none})))
+
+        return {
+            '_type': 'playlist',
+            'entries': entries,
+            'id': album_id,
+            **metadata,
+            'thumbnails': [self._extract_thumbnail(traverse_obj(album, ('attributes', 'artwork')))],
         }
 
 

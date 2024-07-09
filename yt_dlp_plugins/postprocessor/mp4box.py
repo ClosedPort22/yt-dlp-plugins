@@ -92,7 +92,12 @@ class MP4BoxPP(PostProcessor):
         m4a.save()
 
     def _yield_opts(self, info):
-        yield from ('-brand', 'M4A :0')
+        # ref: https://cconcolato.github.io/mp4ra/filetype.html
+        yield '-brand'
+        if info.get('ext') == 'm4a':
+            yield 'M4A :0'
+        else:
+            yield 'mp42'
 
         # add compatible brands
         for brand in ('mp42', 'isom'):
