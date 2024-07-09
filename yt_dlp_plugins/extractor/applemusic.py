@@ -246,6 +246,10 @@ class AppleMusicAlbumIE(AppleMusicBaseIE):
                 data.get('video'), video_id=video_id, m3u8_id=name, headers=self._SUPPRESS_AUTH))
             thumbnails.append(self._extract_thumbnail(data.get('previewFrame')))
 
+        if not formats:
+            self.raise_no_formats(
+                'This album does not have an animated cover', expected=True, video_id=video_id)
+
         for f in formats:
             f['url'] = re.sub(r'-?\.m3u8', '-.mp4', f['url'])
             f['protocol'] = 'http'
