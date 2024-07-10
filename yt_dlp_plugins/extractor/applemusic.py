@@ -161,6 +161,58 @@ class AppleMusicBaseIE(InfoExtractor):
 
 class AppleMusicIE(AppleMusicBaseIE):
     _VALID_URL = AppleMusicBaseIE._VALID_URL_BASE + r'.*(?:\?|&)i=(?P<song_id>[0-9]+)'
+    _TESTS = [{
+        'url': 'https://music.apple.com/us/album/joyride/1754468855?i=1754468856',
+        'info_dict': {
+            'id': '1754468856',
+            'ext': 'm4a',
+        },
+        'params': {'skip_download': True},
+        'expected_exception': 'ExtractorError',
+    }, {
+        'note': 'unplayable song',
+        'url': 'https://music.apple.com/us/album/numb/1440843089?i=1440843092',
+        'info_dict': {
+            'id': '1440843092',
+            'release_date': '20160210',
+            'thumbnail': r're:^https://.+\.mzstatic\.com/image/thumb/.+1234x4321(?:bb)?\.jpg',
+            'composers': ['Max Jury & Dean Josiah Cover'],
+            'artists': ['Max Jury'],
+            'upc': '00602547938022',
+            'track_count': 9,
+            'is_apple_digital_master': True,
+            'track_number': 1,
+            'disc_number': 1,
+            'title': 'Numb',
+            'genres': ['Alternative', 'Music'],
+            'storefront_id': 143441,
+            'album_type': 'Compilation',
+            'isrc': 'GBX721500409',
+            'album': 'Me Before You (Original Motion Picture Soundtrack)',
+            'album_id': '1440843089',
+            'copyright': 'This Compilation ℗ 2016 Interscope Records',
+            'track': 'Numb',
+            'album_artists': ['Various Artists'],
+            'artist_ids': ['1434745894'],
+            'region_code': 'us',
+            'record_label': 'UMGRI Interscope',
+            'duration': 245.987,
+            'genre_ids': ['20', '34'],
+        },
+        'params': {
+            'extractor_args': {'applemusic': {
+                'max_thumbnail_width': ['1234'],
+                'max_thumbnail_height': ['4321'],
+            }},
+            'skip_download': True,
+            'ignore_no_formats_error': True,
+        },
+        'expected_warnings': [
+            'Song is unplayable',
+            'No video formats found',
+            'Requested format is not available',
+        ],
+    }]
 
     def _extract_lyrics(self, region, song_id):
         if not self.get_param('http_headers').get('Media-User-Token'):
@@ -235,6 +287,127 @@ class AppleMusicIE(AppleMusicBaseIE):
 
 class AppleMusicAlbumIE(AppleMusicBaseIE):
     _VALID_URL = AppleMusicBaseIE._VALID_URL_BASE + r'(?:(?!(?:\?|&)i=[0-9]+).)*$'
+    _TESTS = [{
+        'url': 'https://music.apple.com/us/album/joyride/1754468855',
+        'info_dict': {
+            'id': '1754468855',
+            'title': 'JOYRIDE - Single',
+            'release_date': '20240704',
+            'age_limit': 18,
+            'genres': ['Pop', 'Music'],
+            'is_apple_digital_master': False,
+            'album_id': '1754468855',
+            'upc': '8721093407898',
+            'record_label': 'Kesha Records',
+            'track_count': 1,
+            'copyright': '℗ 2024 Kesha Records',
+            'thumbnails': 'count:1',
+            'album_type': 'Single',
+            'album_artists': ['Kesha'],
+            'artists': ['Kesha'],
+        },
+        'playlist_count': 1,
+    }, {
+        'note': 'album with unavailable tracks',
+        'url': 'https://music.apple.com/us/album/me-before-you-original-motion-picture-soundtrack/1440843089',
+        'info_dict': {
+            'title': 'Me Before You (Original Motion Picture Soundtrack)',
+            'is_apple_digital_master': True,
+            'record_label': 'UMGRI Interscope',
+            'album_id': '1440843089',
+            'album_artists': ['Various Artists'],
+            'release_date': '20160603',
+            'genres': ['Soundtrack', 'Music'],
+            'album_type': 'Compilation',
+            'upc': '00602547938022',
+            'artists': ['Various Artists'],
+            'track_count': 9,
+            'id': '1440843089',
+            'copyright': 'This Compilation ℗ 2016 Interscope Records',
+        },
+        'playlist_count': 9,
+        'params': {'flat_playlist': True},
+    }, {
+        'note': 'only animated cover',
+        'url': 'https://music.apple.com/ca/album/a-head-full-of-dreams/1053933969',
+        'info_dict': {
+            'id': '1053933969',
+            'ext': 'mp4',
+            'title': 'A Head Full of Dreams',
+            'record_label': 'Parlophone UK',
+            'genres': ['Alternative', 'Music', 'Rock', 'Adult Alternative', 'Pop', 'Britpop'],
+            'copyright': '℗ 2015 Parlophone Records Limited, a Warner Music Group Company',
+            'track_count': 11,
+            'thumbnail': r're:^https://.+\.mzstatic\.com/image/thumb/.+\.jpg',
+            'album_artists': ['Coldplay'],
+            'release_date': '20151204',
+            'upc': '190295998783',
+            'album_id': '1053933969',
+            'artists': ['Coldplay'],
+            'description': 'md5:78184cb419e150d4050f803e6233ad51',
+            'media_type': 'editorialVideo',
+            'is_apple_digital_master': True,
+        },
+        'params': {
+            'noplaylist': True,
+            'skip_download': True,
+        }
+    }, {
+        'note': 'animated cover and album',
+        'url': 'https://music.apple.com/ca/album/music-of-the-spheres/1576349937',
+        'info_dict': {
+            'id': '1576349937',
+            'genres': ['Pop', 'Music'],
+            'track_count': 12,
+            'record_label': 'Parlophone UK',
+            'album_artists': ['Coldplay'],
+            'description': 'md5:fbd9c509643265791ac65d169691cdec',
+            'is_apple_digital_master': True,
+            'album_id': '1576349937',
+            'copyright': 'Under exclusive licence to Parlophone Records Limited, ℗ 2021 Coldplay',
+            'id': '1576349937',
+            'artists': ['Coldplay'],
+            'release_date': '20211015',
+            'title': 'Music of the Spheres',
+            'age_limit': 18,
+            'upc': '190296529818',
+        },
+        'playlist_count': 13,
+        'params': {
+            'skip_download': True,
+            'flat_playlist': True,
+        },
+    }, {
+        'note': 'album without an animated cover',
+        'url': 'https://music.apple.com/us/album/tgif/1752805219',
+        'info_dict': {
+            'id': '1752805219',
+            'title': 'TGIF - Single',
+            'record_label': 'CMG/Interscope Records',
+            'age_limit': 18,
+            'upc': '00602465973747',
+            'album_artists': ['GloRilla'],
+            'track_count': 1,
+            'copyright': '℗ 2024 CMG/Interscope Records',
+            'artists': ['GloRilla'],
+            'is_apple_digital_master': True,
+            'album_type': 'Single',
+            'album_id': '1752805219',
+            'release_date': '20240621',
+            'genres': ['Hip-Hop/Rap', 'Music'],
+        },
+        'params': {
+            'noplaylist': True,
+            'ignore_no_formats_error': True,
+            'skip_download': True,
+        },
+        'expected_warnings': [
+            'This album does not have an animated cover',
+            'No video formats found',
+            'Requested format is not available',
+        ],
+    }]
+
 
     def _extract_animated_cover(self, album, video_id):
         formats = []
