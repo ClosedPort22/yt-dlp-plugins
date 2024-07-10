@@ -190,9 +190,11 @@ class AppleMusicIE(AppleMusicBaseIE):
         # Unfortunately, due to the extreme complexity of '_parse_m3u8_formats_and_subtitles',
         # it's impossible to extract some useful info (such as channel, asr and whether the
         # track is Dolby Atmos or not) wthout re-implementing the entire method
-        formats = self._extract_m3u8_formats(
-            traverse_obj(song, ('attributes', 'extendedAssetUrls', 'enhancedHls')),
-            video_id=song_id, headers=self._SUPPRESS_AUTH)
+        if hls := traverse_obj(song, ('attributes', 'extendedAssetUrls', 'enhancedHls')):
+            formats = self._extract_m3u8_formats(hls, video_id=song_id, headers=self._SUPPRESS_AUTH)
+        else:
+            self.raise_no_formats('Song is unplayable', expected=True, video_id=song_id)
+            formats = []
 
         metadata = {
             'id': song_id,
