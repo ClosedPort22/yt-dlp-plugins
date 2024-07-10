@@ -44,9 +44,10 @@ specified.
 
 ## Note
 
-Some of the websites listed are known to use DRM.
-This project does not decrypt DRM-protected content, and is not affiliated
-with or endorsed by the yt-dlp project.
+Some of the websites listed are known to use DRM. Extractors for these sites are
+provided for informational/demonstration purposes only and **will not enable you
+to decrypt DRM-protected content**. This project is not affiliated with or
+endorsed by the yt-dlp project.
 
 ## License
 
