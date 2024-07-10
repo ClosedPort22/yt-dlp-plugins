@@ -5,6 +5,7 @@ from yt_dlp.extractor.common import InfoExtractor
 from yt_dlp.utils import (
     NUMBER_RE,
     dfxp2srt,
+    ExtractorError,
     int_or_none,
     parse_codecs,
     parse_qs,
@@ -93,17 +94,25 @@ class AppleMusicBaseIE(InfoExtractor):
         # merge expected response codes
         codes = [401, *variadic(expected_status)] if expected_status else 401
 
-        if self._api_headers.get('Authorization'):
-            result, urlh = self._download_json_handle(
+        def request():
+            res = self._download_json_handle(
                 *args, expected_status=codes, headers={**self._api_headers, **headers}, **kwargs)
-            if urlh.status != 401:
-                return result
+            if res is False:
+                return res  # used to signal non-fatal errors
+            result, urlh = res
+            if urlh.status == 401:
+                return None  # don't return yet
+            return result  # normal result
+
+        if self._api_headers.get('Authorization'):
+            if (res := request()) is not None:
+                return res
+            # token expired
         elif cached_token := self.cache.load('applemusic', 'token'):
             self._api_headers['Authorization'] = f'Bearer {cached_token}'
-            result, urlh = self._download_json_handle(
-                *args, expected_status=codes, headers={**self._api_headers, **headers}, **kwargs)
-            if urlh.status != 401:
-                return result
+            if (res := request()) is not None:
+                return res
+            # token expired
 
         # anonymous token has expired or is not cached
         token = self._get_anonymous_token(video_id=kwargs.get('video_id'))
@@ -235,8 +244,10 @@ class AppleMusicIE(AppleMusicBaseIE):
         region, _, song_id = self._match_valid_url(url).groups()
         resp = self._download_api_json(
             f'https://amp-api.music.apple.com/v1/catalog/{region}/songs/{song_id}?extend=extendedAssetUrls&include=albums,genres',
-            video_id=song_id, headers=self._SUPPRESS_USER_AUTH,
-            query=self._get_lang_query(url))
+            video_id=song_id, headers=self._SUPPRESS_USER_AUTH, query=self._get_lang_query(url), fatal=False)
+        if not resp:
+            raise ExtractorError(
+                'This song either does not exist or is unavailable in the current region', expected=True)
         song = traverse_obj(resp, ('data', ..., any))
 
         # Unfortunately, due to the extreme complexity of '_parse_m3u8_formats_and_subtitles',
@@ -460,7 +471,6 @@ class AppleMusicAlbumIE(AppleMusicBaseIE):
         'only_matching': True,
     }]
 
-
     def _extract_animated_cover(self, album, video_id):
         formats = []
         thumbnails = []
@@ -489,15 +499,18 @@ class AppleMusicAlbumIE(AppleMusicBaseIE):
 
     def _yes_playlist(self, *args, **kwargs):
         return super()._yes_playlist(
-                    True, True, playlist_label='both the animated cover and the album',
-                    video_label='animated album cover')
+            True, True, playlist_label='both the animated cover and the album',
+            video_label='animated album cover')
 
     def _real_extract(self, url):
         region, album_id = self._match_valid_url(url).groups()
 
         resp = self._download_api_json(
             f'https://amp-api.music.apple.com/v1/catalog/{region}/albums/{album_id}?include=tracks&extend=editorialVideo',
-            video_id=album_id, headers=self._SUPPRESS_USER_AUTH, query=self._get_lang_query(url))
+            video_id=album_id, headers=self._SUPPRESS_USER_AUTH, query=self._get_lang_query(url), fatal=False)
+        if not resp:
+            raise ExtractorError(
+                'This album either does not exist or is unavailable in the current region', expected=True)
         album = traverse_obj(resp, ('data', ..., any))
 
         metadata = {
