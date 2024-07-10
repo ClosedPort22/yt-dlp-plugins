@@ -262,6 +262,11 @@ class AppleMusicAlbumIE(AppleMusicBaseIE):
             'media_type': 'editorialVideo',
         }
 
+    def _yes_playlist(self, *args, **kwargs):
+        return super()._yes_playlist(
+                    True, True, playlist_label='both the animated cover and the album',
+                    video_label='animated album cover')
+
     def _real_extract(self, url):
         region, album_id = self._match_valid_url(url).groups()
 
@@ -281,15 +286,23 @@ class AppleMusicAlbumIE(AppleMusicBaseIE):
                 **cover_data,
                 'http_headers': self._SUPPRESS_AUTH,
             }
-            if not self._yes_playlist(
-                    True, True, playlist_label='both the animated cover and the album',
-                    video_label='animated album cover'):
+            if not self._yes_playlist():
                 return animated_cover
 
             entries = [animated_cover]
-        else:
+        elif self._yes_playlist():
             self.to_screen('This album does not have an animated cover')
             entries = []
+
+        else:
+            self.raise_no_formats(
+                'This album does not have an animated cover', expected=True, video_id=album_id)
+            return {
+                'id': album_id,
+                **metadata,
+                'formats': [],
+                'http_headers': self._SUPPRESS_AUTH,
+            }
 
         entries.extend(
             self.url_result(song_url, AppleMusicIE) for song_url in
