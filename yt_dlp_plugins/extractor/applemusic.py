@@ -406,6 +406,58 @@ class AppleMusicAlbumIE(AppleMusicBaseIE):
             'No video formats found',
             'Requested format is not available',
         ],
+    }, {
+        'note': 'region-locked album',
+        'url': 'https://music.apple.com/jp/album/mylo-xyloto/693580048',
+        'info_dict': {
+            'id': '693580048',
+            'album_id': '693580048',
+            'copyright': '℗ 2011 Parlophone Records Ltd, a Warner Music Group Company',
+            'release_date': '20111019',
+            'artists': ['コールドプレイ'],
+            'genres': ['オルタナティブ', 'ミュージック', 'ロック', 'アダルト・アルタナティブ'],
+            'upc': '5099972943854',
+            'album_artists': ['コールドプレイ'],
+            'is_apple_digital_master': True,
+            'record_label': 'Parlophone UK',
+            'title': 'Mylo Xyloto',
+            'track_count': 17,
+            'description': 'md5:62eeb52901a4ec8142dfb1d2b83be61b',
+        },
+        'playlist_count': 17,
+        'params': {
+            'skip_download': True,
+            'flat_playlist': True,
+        },
+    }, {
+        'note': 'different language code',
+        'url': 'https://music.apple.com/jp/album/mylo-xyloto/693580048?l=en-US',
+        'info_dict': {
+            'id': '693580048',
+            'is_apple_digital_master': True,
+            'genres': ['Alternative', 'Music', 'Rock', 'Adult Alternative'],
+            'release_date': '20111019',
+            'album_id': '693580048',
+            'track_count': 17,
+            'upc': '5099972943854',
+            'description': 'md5:7ce74b19a24516d679ccaa5db0b1611f',
+            'title': 'Mylo Xyloto',
+            'album_artists': ['Coldplay'],
+            'record_label': 'Parlophone UK',
+            'artists': ['Coldplay'],
+            'copyright': '℗ 2011 Parlophone Records Ltd, a Warner Music Group Company',
+        },
+        'playlist_count': 17,
+        'params': {
+            'skip_download': True,
+            'flat_playlist': True,
+        },
+    }, {
+        'url': 'https://geo.music.apple.com/us/album/_/1752805219',
+        'only_matching': True,
+    }, {
+        'url': 'https://beta.music.apple.com/us/album/tgif/1752805219',
+        'only_matching': True,
     }]
 
 
