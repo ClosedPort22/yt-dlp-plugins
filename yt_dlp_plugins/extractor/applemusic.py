@@ -4,8 +4,8 @@ import re
 from yt_dlp.extractor.common import InfoExtractor
 from yt_dlp.utils import (
     NUMBER_RE,
-    dfxp2srt,
     ExtractorError,
+    dfxp2srt,
     int_or_none,
     parse_codecs,
     parse_qs,
@@ -47,7 +47,7 @@ dfxp2srt.__globals__['parse_dfxp_time_expr'] = _parse_dfxp_time_expr_fix
 
 class AppleMusicBaseIE(InfoExtractor):
     _VALID_URL = False
-    _VALID_URL_BASE = r'^https?://(?:(?:geo|beta)\.)?music\.apple\.com/(?P<region>[a-z]{2})/album/.+/(?P<album_id>[0-9]+)'
+    _VALID_URL_BASE = r'^https?://(?:(?:geo|beta)\.)?music\.apple\.com/'
 
     _SUPPRESS_AUTH = {'Authorization': '', 'Media-User-Token': ''}
     _SUPPRESS_USER_AUTH = {'Media-User-Token': ''}
@@ -169,7 +169,10 @@ class AppleMusicBaseIE(InfoExtractor):
 
 
 class AppleMusicIE(AppleMusicBaseIE):
-    _VALID_URL = AppleMusicBaseIE._VALID_URL_BASE + r'.*(?:\?|&)i=(?P<song_id>[0-9]+)'
+    _VALID_URL = AppleMusicBaseIE._VALID_URL_BASE + (
+        r'(?P<region>[a-z]{2})/'
+        r'(?:song/.+/(?P<song_id>[0-9]+)|album/.+/(?P<album_id>[0-9]+).*'
+        r'(?:\?|&)i=(?P<song_id_2>[0-9]+))')
     _TESTS = [{
         'url': 'https://music.apple.com/us/album/joyride/1754468855?i=1754468856',
         'info_dict': {
@@ -261,6 +264,9 @@ class AppleMusicIE(AppleMusicBaseIE):
             'No video formats found',
             'Requested format is not available',
         ],
+    }, {
+        'url': 'https://music.apple.com/ca/song/the-shortest-straw/1433828083',
+        'only_matching': True,
     }]
 
     def _extract_lyrics(self, region, song_id):
@@ -294,7 +300,10 @@ class AppleMusicIE(AppleMusicBaseIE):
         return []
 
     def _real_extract(self, url):
-        region, _, song_id = self._match_valid_url(url).groups()
+        mobj = self._match_valid_url(url)
+        region = mobj.group('region')
+        song_id = mobj.group('song_id') or mobj.group('song_id_2')
+
         resp = self._download_api_json(
             f'https://amp-api.music.apple.com/v1/catalog/{region}/songs/{song_id}?extend=extendedAssetUrls&include=albums,genres',
             video_id=song_id, headers=self._SUPPRESS_USER_AUTH, query=self._get_lang_query(url), fatal=False)
@@ -341,7 +350,8 @@ class AppleMusicIE(AppleMusicBaseIE):
 
 
 class AppleMusicAlbumIE(AppleMusicBaseIE):
-    _VALID_URL = AppleMusicBaseIE._VALID_URL_BASE + r'(?:(?!(?:\?|&)i=[0-9]+).)*$'
+    _VALID_URL = AppleMusicBaseIE._VALID_URL_BASE + \
+        r'(?P<region>[a-z]{2})/album/.+/(?P<album_id>[0-9]+)(?:(?!(?:\?|&)i=[0-9]+).)*$'
     _TESTS = [{
         'url': 'https://music.apple.com/us/album/joyride/1754468855',
         'info_dict': {
