@@ -221,6 +221,46 @@ class AppleMusicIE(AppleMusicBaseIE):
             'No video formats found',
             'Requested format is not available',
         ],
+    }, {
+        'note': 'only available in lossy',
+        'url': 'https://music.apple.com/us/album/heart-no-3/1216647292?i=1216648056',
+        'info_dict': {
+            'id': '1216648056',
+            'is_apple_digital_master': False,
+            'genre_ids': ['34', '10'],
+            'disc_number': 1,
+            'album': 'I\'m Becoming Part Crow',
+            'storefront_id': 143441,
+            'artists': ['Daniel M. P. Shaw'],
+            'release_date': '20170314',
+            'composers': ['Daniel Mark Paget Shaw'],
+            'duration': 88.625,
+            'title': 'Heart No. 3',
+            'album_id': '1216647292',
+            'genres': ['Alternative Folk', 'Music', 'Singer/Songwriter'],
+            'thumbnail': r're:^https://.+\.mzstatic\.com/image/thumb/.+\.jpg',
+            'track_count': 13,
+            'album_artists': ['Daniel M. P. Shaw'],
+            'record_label': 'Boj River Music',
+            'upc': '191061467359',
+            'track_id': '1216648056',
+            'copyright': '℗ 2017 Daniel M. P. Shaw',
+            'track': 'Heart No. 3',
+            'region_code': 'us',
+            'track_number': 1,
+            'artist_ids': ['1211880898'],
+            'media_type': 'song',
+            'isrc': 'CHC991700022',
+        },
+        'params': {
+            'skip_download': True,
+            'ignore_no_formats_error': True,
+        },
+        'expected_warnings': [
+            'Song is not available over HLS',
+            'No video formats found',
+            'Requested format is not available',
+        ],
     }]
 
     def _extract_lyrics(self, region, song_id):
@@ -240,6 +280,19 @@ class AppleMusicIE(AppleMusicBaseIE):
                 subtitles[endpoint] = [{'data': ttml_data, 'ext': 'ttml'}]
         return subtitles
 
+    def _extract_formats(self, song, song_id):
+        # Unfortunately, due to the extreme complexity of '_parse_m3u8_formats_and_subtitles',
+        # it's impossible to extract some useful info (such as channel, asr and whether the
+        # track is Dolby Atmos or not) wthout re-implementing the entire method
+        assets = traverse_obj(song, ('attributes', 'extendedAssetUrls', {dict}))
+        if not assets:
+            self.raise_no_formats('Song is unplayable', expected=True, video_id=song_id)
+        elif hls := traverse_obj(assets, ('enhancedHls', {url_or_none})):
+            return self._extract_m3u8_formats(hls, video_id=song_id, headers=self._SUPPRESS_AUTH)
+        else:
+            self.raise_no_formats('Song is not available over HLS', expected=True, video_id=song_id)
+        return []
+
     def _real_extract(self, url):
         region, _, song_id = self._match_valid_url(url).groups()
         resp = self._download_api_json(
@@ -250,17 +303,9 @@ class AppleMusicIE(AppleMusicBaseIE):
                 'This song either does not exist or is unavailable in the current region', expected=True)
         song = traverse_obj(resp, ('data', ..., any))
 
-        # Unfortunately, due to the extreme complexity of '_parse_m3u8_formats_and_subtitles',
-        # it's impossible to extract some useful info (such as channel, asr and whether the
-        # track is Dolby Atmos or not) wthout re-implementing the entire method
-        if hls := traverse_obj(song, ('attributes', 'extendedAssetUrls', 'enhancedHls')):
-            formats = self._extract_m3u8_formats(hls, video_id=song_id, headers=self._SUPPRESS_AUTH)
-        else:
-            self.raise_no_formats('Song is unplayable', expected=True, video_id=song_id)
-            formats = []
-
         metadata = {
             'id': song_id,
+            'formats': self._extract_formats(song, song_id),
             **self._extract_common_metadata(song),
             **self._extract_album_metadata(traverse_obj(song, ('relationships', 'albums', 'data', 0, {dict}))),
             **traverse_obj(song, ('attributes', {
@@ -276,7 +321,6 @@ class AppleMusicIE(AppleMusicBaseIE):
                 # not part of yt-dlp
                 'isrc': ('isrc', {str}),
             })),
-            'formats': formats,
             'thumbnails': [self._extract_thumbnail(traverse_obj(song, ('attributes', 'artwork')))],
             'subtitles': (self._extract_lyrics(region, song_id)
                           if traverse_obj(song, ('attributes', 'hasLyrics', {bool})) else []),
