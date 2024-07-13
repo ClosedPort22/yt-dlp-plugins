@@ -272,7 +272,7 @@ class AppleMusicIE(AppleMusicBaseIE):
     def _extract_lyrics(self, region, song_id):
         if not self.get_param('http_headers').get('Media-User-Token'):
             self.to_screen('No Media-User-Token provided, skipping lyrics extraction')
-            return []
+            return {}
         subtitles = {}
         # will return 404 if:
         # * Media-User-Token is not present or is invalid (?)
@@ -286,6 +286,16 @@ class AppleMusicIE(AppleMusicBaseIE):
                 subtitles[endpoint] = [{'data': ttml_data, 'ext': 'ttml'}]
         return subtitles
 
+    @staticmethod
+    def _language_code_or_none(code):
+        if not code or not isinstance(code, str):
+            return None
+        # Per BCP 47, omitting these tags is preferable if omission is allowed
+        # See https://www.rfc-editor.org/rfc/bcp/bcp47.txt
+        if code in ('zxx', 'und', 'mul', 'mis'):
+            return None
+        return code
+
     def _extract_formats(self, song, song_id):
         # Unfortunately, due to the extreme complexity of '_parse_m3u8_formats_and_subtitles',
         # it's impossible to extract some useful info (such as channel, asr and whether the
@@ -293,11 +303,19 @@ class AppleMusicIE(AppleMusicBaseIE):
         assets = traverse_obj(song, ('attributes', 'extendedAssetUrls', {dict}))
         if not assets:
             self.raise_no_formats('Song is unplayable', expected=True, video_id=song_id)
+            formats = []
         elif hls := traverse_obj(assets, ('enhancedHls', {url_or_none})):
-            return self._extract_m3u8_formats(hls, video_id=song_id, headers=self._SUPPRESS_AUTH)
+            formats = self._extract_m3u8_formats(hls, video_id=song_id, headers=self._SUPPRESS_AUTH)
         else:
             self.raise_no_formats('Song is not available over HLS', expected=True, video_id=song_id)
-        return []
+            formats = []
+
+        if not formats:
+            return formats
+        if lang := traverse_obj(song, ('attributes', 'audioLocale', {self._language_code_or_none})):
+            for f in formats:
+                f['language'] = lang
+        return formats
 
     def _real_extract(self, url):
         mobj = self._match_valid_url(url)
@@ -430,7 +448,6 @@ class AppleMusicAlbumIE(AppleMusicBaseIE):
             'is_apple_digital_master': True,
             'album_id': '1576349937',
             'copyright': 'Under exclusive licence to Parlophone Records Limited, ℗ 2021 Coldplay',
-            'id': '1576349937',
             'artists': ['Coldplay'],
             'release_date': '20211015',
             'title': 'Music of the Spheres',

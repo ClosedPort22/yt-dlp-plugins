@@ -111,6 +111,10 @@ class MP4BoxPP(PostProcessor):
             yield '-rb'
             yield brand
 
+        if lang := traverse_obj(info, (self._add_meta_prefix('language'), {str}, any)):
+            yield '-lang'
+            yield lang
+
         if tags := self._get_tags(info):
             yield '-itags'
             yield tags
