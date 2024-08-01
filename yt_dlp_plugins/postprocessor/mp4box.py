@@ -19,11 +19,12 @@ class MP4BoxPostProcessingError(PostProcessingError):
 
 class MP4BoxPP(PostProcessor):
     def __init__(self, downloader=None, path='mp4box',
-                 embed_metadata=True, embed_thumbnail=False):
+                 embed_metadata=True, embed_thumbnail=False, embed_credits=False):
         super().__init__(downloader)
         self._path = path
         self._embed_metadata = embed_metadata
         self._embed_thumbnail = embed_thumbnail
+        self._embed_credits = embed_credits
         self._delete = []
 
     @PostProcessor._restrict_to(images=False)
@@ -78,6 +79,13 @@ class MP4BoxPP(PostProcessor):
             # value must be bytes
             # https://github.com/quodlibet/mutagen/issues/391
             m4a[f'----:com.apple.iTunes:{key}'] = value.encode()
+
+        if self._embed_credits and (credits := info.get('credits')):
+            for key, value in dict(sorted(credits.items())).items():
+                try:
+                    m4a[f'----:com.apple.iTunes:{key}'] = [s.encode() for s in sorted(value)]
+                except UnicodeEncodeError:  # if key cannot be encoded in latin-1, ignore
+                    pass
 
         # integer tags unrecognized by mp4box
         for key, value in traverse_obj(info, {

@@ -36,6 +36,12 @@ This postprocessor is intended to be used alongside the Apple Music extractors.
 - `embed_thumbnail`: Whether to embed thumbnail in the file. Specify `delete`
   to delete the thumbnail after embedding. You can combine this option with
   `max_thumbnail_*` to control the size of the thumbnail to be embedded.
+- `embed_credits`: Whether to embed credits in the MP4 file. This options has
+  no effect if `mutagen` is not enabled. The exact names of keys (e.g.
+  `Mastering Engineer`, `Songwriter`) depend on the language code you pass via
+  the URL (e.g. `?l=en-GB`) and the region's default language, since Apple
+  returns localized names. Important note: if a localized key contains
+  non-Latin characters, it will be silently ignored.
 - `path`: Path to the executable. Defaults to `mp4box`, which will only work
   if `mp4box` is in your `PATH`.
 

@@ -1,3 +1,4 @@
+import collections
 import functools
 import re
 
@@ -296,10 +297,22 @@ class AppleMusicIE(AppleMusicBaseIE):
             return None
         return code
 
+    @staticmethod
+    def _extract_credits(song):
+        credits = collections.defaultdict(list)
+        for person in traverse_obj(
+            song, ('relationships', 'credits', 'data', ...,
+                   'relationships', 'credit-artists', 'data', ..., 'attributes', {dict})):
+            if not (name := person.get('name')):
+                continue
+            for role in person.get('roleNames') or ():
+                credits[role].append(name)
+        return credits
+
     def _extract_formats(self, song, song_id):
         # Unfortunately, due to the extreme complexity of '_parse_m3u8_formats_and_subtitles',
         # it's impossible to extract some useful info (such as channel, asr and whether the
-        # track is Dolby Atmos or not) wthout re-implementing the entire method
+        # track is Dolby Atmos or not) without re-implementing the entire method
         assets = traverse_obj(song, ('attributes', 'extendedAssetUrls', {dict}))
         if not assets:
             self.raise_no_formats('Song is unplayable', expected=True, video_id=song_id)
@@ -323,7 +336,7 @@ class AppleMusicIE(AppleMusicBaseIE):
         song_id = mobj.group('song_id') or mobj.group('song_id_2')
 
         resp = self._download_api_json(
-            f'https://amp-api.music.apple.com/v1/catalog/{region}/songs/{song_id}?extend=extendedAssetUrls&include=albums,genres',
+            f'https://amp-api.music.apple.com/v1/catalog/{region}/songs/{song_id}?extend=extendedAssetUrls&include=albums,genres,credits',
             video_id=song_id, headers=self._SUPPRESS_USER_AUTH, query=self._get_lang_query(url), fatal=False)
         if not resp:
             raise ExtractorError(
@@ -357,6 +370,7 @@ class AppleMusicIE(AppleMusicBaseIE):
                 'artist_ids': ('artists', 'data', ..., 'id', {str}, all),
                 'genre_ids': ('genres', 'data', ..., 'id', {str}, all),
             })),
+            'credits': self._extract_credits(song),
             'region_code': region,
         }
         if sfid := _STOREFRONT_ID_MAP.get(region.upper()):
