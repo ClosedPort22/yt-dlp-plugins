@@ -6,6 +6,7 @@ from yt_dlp.extractor.common import InfoExtractor
 from yt_dlp.utils import (
     NUMBER_RE,
     ExtractorError,
+    clean_html,
     dfxp2srt,
     int_or_none,
     parse_codecs,
@@ -44,6 +45,22 @@ assert _parse_dfxp_time_expr_fix('1:01.100') == 61.1
 
 
 dfxp2srt.__globals__['parse_dfxp_time_expr'] = _parse_dfxp_time_expr_fix
+
+
+def ttml2txt(ttml):
+    """Convert Apple TTML lyrics to TXT"""
+    # 1. add "Songwriter: "
+    # 2. add line breaks between verses
+    # 3. strip HTML tags
+    return clean_html(
+        re.sub(r"<songwriter>([^<]+)</songwriter>", r"Songwriter: \1<br/>", ttml).
+        replace("<div", "<br/><br/><div"))
+
+
+from yt_dlp.utils._utils import _UnsafeExtensionError  # noqa: E402
+
+# allow "txt"
+_UnsafeExtensionError.ALLOWED_EXTENSIONS = frozenset((*_UnsafeExtensionError.ALLOWED_EXTENSIONS, 'txt'))
 
 
 class AppleMusicBaseIE(InfoExtractor):
@@ -284,7 +301,11 @@ class AppleMusicIE(AppleMusicBaseIE):
                 f'https://amp-api.music.apple.com/v1/catalog/{region}/songs/{song_id}/{endpoint}',
                     video_id=song_id, expected_status=404, note=f'Downloading {endpoint}'),
                     ('data', ..., 'attributes', 'ttml', any)):
-                subtitles[endpoint] = [{'data': ttml_data, 'ext': 'ttml'}]
+                if re.search(r"itunes:timing=['\"]None", ttml_data):
+                    # if TTML has no timing info, convert to plain text
+                    subtitles[endpoint] = [{'data': ttml2txt(ttml_data), 'ext': 'txt'}]
+                else:
+                    subtitles[endpoint] = [{'data': ttml_data, 'ext': 'ttml'}]
         return subtitles
 
     @staticmethod
