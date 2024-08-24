@@ -330,25 +330,23 @@ class AppleMusicIE(AppleMusicBaseIE):
                 credits[role].append(name)
         return credits
 
-    def _extract_formats(self, song, song_id):
+    def _real_extract_formats(self, song, song_id):
         # Unfortunately, due to the extreme complexity of '_parse_m3u8_formats_and_subtitles',
         # it's impossible to extract some useful info (such as channel, asr and whether the
         # track is Dolby Atmos or not) without re-implementing the entire method
-        assets = traverse_obj(song, ('attributes', 'extendedAssetUrls', {dict}))
-        if not assets:
+        if not (assets := traverse_obj(song, ('attributes', 'extendedAssetUrls', {dict}))):
             self.raise_no_formats('Song is unplayable', expected=True, video_id=song_id)
-            formats = []
-        elif hls := traverse_obj(assets, ('enhancedHls', {url_or_none})):
-            formats = self._extract_m3u8_formats(hls, video_id=song_id, headers=self._SUPPRESS_AUTH)
-        else:
+            return []
+        if not (hls := traverse_obj(assets, ('enhancedHls', {url_or_none}))):
             self.raise_no_formats('Song is not available over HLS', expected=True, video_id=song_id)
-            formats = []
+            return []
+        return self._extract_m3u8_formats(hls, video_id=song_id, headers=self._SUPPRESS_AUTH)
 
-        if not formats:
-            return formats
-        if lang := traverse_obj(song, ('attributes', 'audioLocale', {self._language_code_or_none})):
-            for f in formats:
-                f['language'] = lang
+    def _extract_formats(self, song, song_id):
+        if formats := self._real_extract_formats(song, song_id):
+            if lang := traverse_obj(song, ('attributes', 'audioLocale', {self._language_code_or_none})):
+                for f in formats:
+                    f['language'] = lang
         return formats
 
     def _real_extract(self, url):
