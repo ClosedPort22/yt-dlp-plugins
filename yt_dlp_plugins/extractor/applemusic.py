@@ -187,6 +187,7 @@ class AppleMusicBaseIE(InfoExtractor):
 
 
 class AppleMusicIE(AppleMusicBaseIE):
+    IE_NAME = 'applemusic'
     _VALID_URL = AppleMusicBaseIE._VALID_URL_BASE + (
         r'(?P<region>[a-z]{2})/'
         r'(?:song/.+/(?P<song_id>[0-9]+)|album/.+/(?P<album_id>[0-9]+).*'
@@ -401,6 +402,7 @@ class AppleMusicIE(AppleMusicBaseIE):
 
 
 class AppleMusicAlbumIE(AppleMusicBaseIE):
+    IE_NAME = 'applemusic:album'
     _VALID_URL = AppleMusicBaseIE._VALID_URL_BASE + \
         r'(?P<region>[a-z]{2})/album/.+/(?P<album_id>[0-9]+)(?:(?!(?:\?|&)i=[0-9]+).)*$'
     _TESTS = [{
