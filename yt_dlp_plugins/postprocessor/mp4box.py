@@ -140,6 +140,14 @@ class MP4BoxPP(PostProcessor):
         self.to_screen('There are no thumbnails on disk.')
         return ''
 
+    @staticmethod
+    def age2rating(age):
+        if age is None:
+            return None
+        if age > 17:  # explicit
+            return 1
+        return 2  # clean
+
     def _get_tags(self, info):
         if not self._embed_metadata and not self._embed_thumbnail:
             return ''
@@ -152,13 +160,6 @@ class MP4BoxPP(PostProcessor):
         # get metadata
         m = self._add_meta_prefix
         yesno = {True: 'yes', False: 'no'}.get
-
-        def age2rating(age):
-            if age is None:
-                return None
-            if age > 17:  # explicit
-                return 1
-            return 2  # clean
 
         # ref: https://exiftool.org/TagNames/QuickTime.html
         data = traverse_obj(info, {
@@ -173,7 +174,7 @@ class MP4BoxPP(PostProcessor):
             'compilation': (m('album_type'), {str},
                             {lambda x: yesno(x.lower() == 'compilation')}),
             'created': (m('release_date'), {str}, {unified_strdate}, {hyphenate_date}),
-            'rating': (m('age_limit'), {int_or_none}, {age2rating}),
+            'rating': (m('age_limit'), {int_or_none}, {self.age2rating}),
             'copyright': (m('copyright'), {str}),
             # unrecognized by mediainfo
             # 'composer': 'composer',
