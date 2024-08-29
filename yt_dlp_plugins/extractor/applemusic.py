@@ -8,12 +8,14 @@ from yt_dlp.utils import (
     ExtractorError,
     clean_html,
     dfxp2srt,
+    float_or_none,
     int_or_none,
     parse_codecs,
     parse_qs,
     traverse_obj,
     unified_strdate,
     url_or_none,
+    urljoin,
     variadic,
 )
 
@@ -70,22 +72,6 @@ class AppleMusicBaseIE(InfoExtractor):
     _SUPPRESS_AUTH = {'Authorization': '', 'Media-User-Token': ''}
     _SUPPRESS_USER_AUTH = {'Media-User-Token': ''}
     _api_headers = {'Origin': 'https://music.apple.com'}
-
-    def __init__(self, downloader=None):
-        super().__init__(downloader)
-
-        def parse_codecs_patched(codecs_str):
-            if codecs_str == 'alac':
-                return {
-                    'vcodec': 'none',
-                    'acodec': codecs_str,
-                    'dynamic_range': None,
-                }
-            return parse_codecs(codecs_str)
-
-        # workaround for yt-dlp's format parser not recognizing 'alac'
-        # (the selector does recognize it)
-        self._parse_m3u8_formats_and_subtitles.__globals__['parse_codecs'] = parse_codecs_patched
 
     @functools.cached_property
     def _MAX_THUMBNAIL_WIDTH(self):
@@ -331,10 +317,68 @@ class AppleMusicIE(AppleMusicBaseIE):
                 credits[role].append(name)
         return credits
 
+    def _parse_m3u8_formats_and_subtitles(
+            self, m3u8_doc, m3u8_url, entry_protocol='m3u8_native', ext=None, preference=None, quality=None, **kwargs):
+        """Massively simplified m3u8 parser"""
+        variants = {}
+
+        for mobj in re.finditer(r'(?m)^#EXT-X-MEDIA:(?P<attributes>.+)', m3u8_doc):
+            attributes = mobj.group("attributes").split(",")
+            data = {k: v.strip('"') for k, _, v in (attr.partition('=') for attr in attributes)}
+            variants[data.pop("GROUP-ID")] = data
+
+        formats = []
+
+        for mobj in re.finditer(
+                r'(?m)^#EXT-X-STREAM-INF:(?P<attributes>[^\r\n]+)\r?\n(?P<uri>[^\r\n]+\.m3u8)', m3u8_doc):
+            attributes, uri = mobj.groups()
+            attributes = attributes.split(",")
+            stream_data = {k: v.strip('"') for k, _, v in (attr.partition('=') for attr in attributes)}
+            group_id = stream_data.pop("AUDIO")
+            data = variants[group_id]
+            data.update(stream_data)
+
+            if (codec := data.get('CODECS')) == 'alac':
+                # workaround for yt-dlp's format parser not recognizing 'alac'
+                # (the selector does recognize it)
+                fmt = {
+                    'vcodec': 'none',
+                    'acodec': "alac",
+                    'dynamic_range': None,
+                }
+            else:
+                fmt = parse_codecs(codec)
+            tbr = float_or_none(traverse_obj(
+                data, 'AVERAGE-BANDWIDTH', '_AVG-BANDWIDTH', 'BANDWIDTH'), scale=1000)
+            fmt.update({
+                'format_id': group_id,
+                'format_index': None,
+                'format_note': f'{depth}-bit' if (depth := data.get('BIT-DEPTH')) else None,
+                'tbr': tbr,
+                'abr': tbr,
+                'asr': traverse_obj(data, ('SAMPLE-RATE', {int_or_none})),
+                'url': uri if re.match(r'^https?://', uri) else urljoin(m3u8_url, uri),
+                'manifest_url': m3u8_url,
+                'ext': ext or 'm4a',
+                'protocol': entry_protocol,
+                'preference': preference,
+                'quality': quality,
+                'has_drm': True,
+            })
+            if channel := data.get('CHANNELS'):
+                if channel == '16/JOC':
+                    fmt.update({'audio_channels': 6, 'format_note': 'Dolby Atmos'})
+                elif channel == '2/-/DOWNMIX':
+                    fmt.update({'audio_channels': 2, 'format_note': 'Downmix'})
+                elif channel == '2/-/BINAURAL':
+                    fmt.update({'audio_channels': 2, 'format_note': 'Binaural'})
+                else:
+                    fmt['audio_channels'] = int_or_none(channel)
+            formats.append(fmt)
+
+        return formats, {}
+
     def _real_extract_formats(self, song, song_id):
-        # Unfortunately, due to the extreme complexity of '_parse_m3u8_formats_and_subtitles',
-        # it's impossible to extract some useful info (such as channel, asr and whether the
-        # track is Dolby Atmos or not) without re-implementing the entire method
         if not (assets := traverse_obj(song, ('attributes', 'extendedAssetUrls', {dict}))):
             self.raise_no_formats('Song is unplayable', expected=True, video_id=song_id)
             return []
