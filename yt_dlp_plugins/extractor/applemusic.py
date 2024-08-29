@@ -193,7 +193,6 @@ class AppleMusicIE(AppleMusicBaseIE):
             'id': '1440843092',
             'release_date': '20160210',
             'thumbnail': r're:^https://.+\.mzstatic\.com/image/thumb/.+1234x4321(?:bb)?\.jpg',
-            'composers': ['Max Jury & Dean Josiah Cover'],
             'artists': ['Max Jury'],
             'upc': '00602547938022',
             'track_count': 9,
@@ -213,8 +212,23 @@ class AppleMusicIE(AppleMusicBaseIE):
             'artist_ids': ['1434745894'],
             'region_code': 'us',
             'record_label': 'UMGRI Interscope',
-            'duration': 245.987,
             'genre_ids': ['20', '34'],
+            'credits': {
+                'Vocals': ['Max Jury'],
+                'Organ': ['Max Jury', 'Dean Josiah'],
+                'Wurlitzer Piano': ['Max Jury'],
+                'Percussion': ['Dean Josiah'],
+                'Drums': ['Dean Josiah'],
+                'Omnichord': ['Charles Wong'],
+                'Guitar': ['Hanan Rubinstein', 'Miles James'],
+                'Programming': ['Steve Fitzmaurice'],
+                'Composer': ['Max Jury', 'Dean Josiah Cover'],
+                'Lyrics': ['Max Jury'],
+                'Songwriter': ['Dean Inflo Josiah'],
+                'Producer': ['Dean Josiah'],
+                'Assistant Mixing Engineer': ['Charles Wong'],
+                'Mixing Engineer': ['Steve Fitzmaurice'],
+            },
         },
         'params': {
             'extractor_args': {'applemusic': {
@@ -259,6 +273,10 @@ class AppleMusicIE(AppleMusicBaseIE):
             'artist_ids': ['1211880898'],
             'media_type': 'song',
             'isrc': 'CHC991700022',
+            'credits': {
+                'Performer': ['Daniel Mark Paget Shaw'],
+                'Songwriter': ['Daniel Mark Paget Shaw'],
+            },
         },
         'params': {
             'skip_download': True,
