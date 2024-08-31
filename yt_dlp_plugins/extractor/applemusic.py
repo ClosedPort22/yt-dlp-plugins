@@ -74,12 +74,15 @@ class AppleMusicBaseIE(InfoExtractor):
     _api_headers = {'Origin': 'https://music.apple.com'}
 
     @functools.cached_property
-    def _MAX_THUMBNAIL_WIDTH(self):
-        return self._configuration_arg('max_thumbnail_width', ['12000'])[0]
+    def _format_thumbnail_url(self):
+        max_width = self._configuration_arg('max_thumbnail_width', ['12000'])[0]
+        max_height = self._configuration_arg('max_thumbnail_height', ['12000'])[0]
+        extension = self._configuration_arg('thumbnail_extension', ['jpg'])[0]
+        quality = self._configuration_arg('thumbnail_quality', ['999'])[0]
 
-    @functools.cached_property
-    def _MAX_THUMBNAIL_HEIGHT(self):
-        return self._configuration_arg('max_thumbnail_height', ['12000'])[0]
+        def fmt(url: str):
+            return url.rpartition('/')[0] + f"/{max_width}x{max_height}-{quality}.{extension}"
+        return fmt
 
     @staticmethod
     def _get_lang_query(url):
@@ -129,8 +132,7 @@ class AppleMusicBaseIE(InfoExtractor):
 
     def _extract_thumbnail(self, obj):
         return traverse_obj(obj, {
-            'url': ('url', {url_or_none}, {lambda x: x.replace(
-                    '{w}x{h}', f'{self._MAX_THUMBNAIL_WIDTH}x{self._MAX_THUMBNAIL_HEIGHT}')}),
+            'url': ('url', {url_or_none}, {self._format_thumbnail_url}),
             # XXX: remove these if max width/height is specified?
             'width': ('width', {int_or_none}),
             'height': ('height', {int_or_none}),
@@ -192,7 +194,7 @@ class AppleMusicIE(AppleMusicBaseIE):
         'info_dict': {
             'id': '1440843092',
             'release_date': '20160210',
-            'thumbnail': r're:^https://.+\.mzstatic\.com/image/thumb/.+1234x4321(?:bb)?\.jpg',
+            'thumbnail': r're:^https://.+\.mzstatic\.com/image/thumb/.+1234x4321-500\.png',
             'artists': ['Max Jury'],
             'upc': '00602547938022',
             'track_count': 9,
@@ -234,6 +236,8 @@ class AppleMusicIE(AppleMusicBaseIE):
             'extractor_args': {'applemusic': {
                 'max_thumbnail_width': ['1234'],
                 'max_thumbnail_height': ['4321'],
+                'thumbnail_extension': ['png'],
+                'thumbnail_quality': ['500'],
             }},
             'skip_download': True,
             'ignore_no_formats_error': True,
