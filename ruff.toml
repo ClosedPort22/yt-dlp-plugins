@@ -1,0 +1,27 @@
+line-length = 120
+
+[lint]
+ignore = [
+    # "ARG001", # Unused function argument
+    "ARG002",  # Unused method argument
+    "ARG003",  # Unused class method argument
+    "EM101",   # string literal in exception
+    "EM102",   # fstring in exception
+    "FBT001",  # Boolean-typed positional argument in function definition
+    "FBT002",  # Boolean default positional argument in function definition
+    "PLR2004", # Magic value used in comparison
+    "RUF012",  # mutable class variables (required by the yt-dlp extractor interface)
+    "S101",    # Use of `assert` detected
+    "SIM102",  # collapsible if (long conditions deserve their own if blocks) 
+    "SLF001",  # Private member accessed (this is usually outside our control)
+    "TID252",  # no relative imports
+    "TRY003",  # long message in exception
+]
+
+[lint.flake8-quotes]
+docstring-quotes = "double"
+multiline-quotes = "double"
+inline-quotes = "double"
+
+[lint.flake8-builtins]
+builtins-ignorelist = ["credits"]

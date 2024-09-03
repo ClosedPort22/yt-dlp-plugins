@@ -1,3 +1,4 @@
+import contextlib
 import os
 from subprocess import PIPE
 
@@ -82,10 +83,9 @@ class MP4BoxPP(PostProcessor):
 
         if self._embed_credits and (credits := info.get('credits')):
             for key, value in dict(sorted(credits.items())).items():
-                try:
+                with contextlib.suppress(UnicodeEncodeError):
+                    # if key cannot be encoded in latin-1, ignore
                     m4a[f'----:com.apple.iTunes:{key}'] = [s.encode() for s in sorted(value)]
-                except UnicodeEncodeError:  # if key cannot be encoded in latin-1, ignore
-                    pass
 
         # integer tags unrecognized by mp4box
         for key, value in traverse_obj(info, {

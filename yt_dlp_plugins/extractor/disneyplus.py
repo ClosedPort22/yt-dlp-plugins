@@ -1,3 +1,4 @@
+# ruff: noqa: N802
 import functools  # noqa: I001
 import json
 import re

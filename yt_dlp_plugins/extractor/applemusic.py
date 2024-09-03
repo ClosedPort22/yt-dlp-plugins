@@ -96,7 +96,7 @@ class AppleMusicBaseIE(InfoExtractor):
         js = self._download_webpage(f'https://beta.music.apple.com/{path}', video_id, 'Downloading JavaScript file')
         return self._search_regex(r'"(eyJh[^"]+)', js, 'anonymous token')
 
-    def _download_api_json(self, *args, expected_status=None, headers={}, **kwargs):
+    def _download_api_json(self, *args, expected_status=None, headers={}, **kwargs):  # noqa: B006
         kwargs.setdefault('transform_source', lambda x: x or '{}')
         # merge expected response codes
         codes = [401, *variadic(expected_status)] if expected_status else 401
