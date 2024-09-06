@@ -4,7 +4,7 @@ Plugins for yt-dlp
 
 ## Extractor arguments
 
-#### applemusic. applemusicalbum
+#### applemusic, applemusicalbum
 
 - `max_thumbnail_width`: Defaults to `12000`
 - `max_thumbnail_height`: Defaults to `12000`

@@ -51,11 +51,11 @@ dfxp2srt.__globals__['parse_dfxp_time_expr'] = _parse_dfxp_time_expr_fix
 
 def ttml2txt(ttml):
     """Convert Apple TTML lyrics to TXT"""
-    # 1. add "Songwriter: "
+    # 1. add "Written By: "
     # 2. add line breaks between verses
     # 3. strip HTML tags
     return clean_html(
-        re.sub(r"<songwriter>([^<]+)</songwriter>", r"Songwriter: \1<br/>", ttml).
+        re.sub(r"<songwriter>([^<]+)</songwriter>", r"Written By: \1<br/>", ttml).
         replace("<div", "<br/><br/><div"))
 
 
