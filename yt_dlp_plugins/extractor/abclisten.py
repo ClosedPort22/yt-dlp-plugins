@@ -119,10 +119,9 @@ class ABCListenAudiobookEpisodeIE(ABCListenAudiobookBaseIE):
             'id': '103170592',
             'ext': 'mp3',
             'title': 'All my Kisses',
-            'release_date': '20230606',
             'modified_date': '20231219',
             'description': 'md5:f853e8cf364bd8d34f4afb35fd7c11b5',
-            'thumbnail': r're:^https?://live-production\.wcms\.abc-cdn\.net\.au.+',
+            'thumbnail': r're:^https?://live-production\.wcms\.abc-cdn\.net\.au/.+',
         },
         'params': {'skip_download': True},
     }, {
@@ -131,7 +130,6 @@ class ABCListenAudiobookEpisodeIE(ABCListenAudiobookBaseIE):
             'id': '13391438',
             'ext': 'mp3',
             'title': 'How to Use This Book',
-            'release_date': '20210621',
             'modified_date': '20210621',
             'description': 'md5:036f8935e04fad111bd2d8655818f66c',
             'duration': 90,
@@ -147,21 +145,17 @@ class ABCListenAudiobookEpisodeIE(ABCListenAudiobookBaseIE):
         # TODO: In case an episode with a valid `transcript` is found, extract it as TXT subtitles
         # and update `ABCListenAudiobookIE` to use `'_type': 'url'` entries so that transcripts could
         # also be extracted when downloading entire audiobooks.
-        return {
-            'id': video_id,
-            **traverse_obj(episode, {
-                'id': 'id',
-                'title': (('title', 'teaserTitle', 'shortTeaserTitle', 'sortTitle'), {str}, any),
-                'release_date': ('firstUpdated', {unified_strdate}),
-                'modified_date': ('lastUpdated', {unified_strdate}),
-                'description': ('caption', 'plainText', {str}),
-                'duration': ('duration', {int_or_none}),
-                'thumbnail': ('thumbnailLink', 'cropInfo', ..., 'value', ..., 'url',
-                              {lambda x: x.partition('?')[0]}, {url_or_none}, any),
-                'formats': ('renditions', ..., {
-                    'vcodec': {lambda _: 'none'},
-                    'ext': ('contentType', {mimetype2ext}),
-                    'url': ('url', {url_or_none}),
-                }, all),
-            }),
-        }
+        return traverse_obj(episode, {
+            'id': 'id',
+            'title': (('title', 'teaserTitle', 'shortTeaserTitle', 'sortTitle'), {str}, any),
+            'modified_date': ('lastUpdated', {unified_strdate}),
+            'description': ('caption', 'plainText', {str}),
+            'duration': ('duration', {int_or_none}),
+            'thumbnail': ('thumbnailLink', 'cropInfo', ..., 'value', ..., 'url',
+                            {lambda x: x.partition('?')[0]}, {url_or_none}, any),
+            'formats': ('renditions', ..., {
+                'vcodec': {lambda _: 'none'},
+                'ext': ('contentType', {mimetype2ext}),
+                'url': ('url', {url_or_none}),
+            }, all),
+        })
