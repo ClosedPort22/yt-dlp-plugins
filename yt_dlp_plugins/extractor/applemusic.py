@@ -69,8 +69,8 @@ class AppleMusicBaseIE(InfoExtractor):
     _VALID_URL = False
     _VALID_URL_BASE = r'^https?://(?:(?:geo|beta)\.)?music\.apple\.com/'
 
-    _SUPPRESS_AUTH = {'Authorization': '', 'Media-User-Token': ''}
-    _SUPPRESS_USER_AUTH = {'Media-User-Token': ''}
+    _SUPPRESS_AUTH = {'Authorization': '', 'Media-User-Token': '', 'X-Dsid': ''}
+    _SUPPRESS_USER_AUTH = {'Media-User-Token': '', 'X-Dsid': ''}
     _api_headers = {'Origin': 'https://music.apple.com'}
 
     @functools.cached_property
@@ -297,8 +297,9 @@ class AppleMusicIE(AppleMusicBaseIE):
     }]
 
     def _extract_lyrics(self, region, song_id):
-        if not self.get_param('http_headers').get('Media-User-Token'):
-            self.to_screen('No Media-User-Token provided, skipping lyrics extraction')
+        if not self.get_param('http_headers').get('Media-User-Token') and \
+                not self._get_cookies('https://amp-api.music.apple.com/'):
+            self.to_screen('No Media-User-Token or cookies provided, skipping lyrics extraction')
             return {}
         subtitles = {}
         # will return 404 if:
