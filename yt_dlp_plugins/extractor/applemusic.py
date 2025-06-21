@@ -65,10 +65,14 @@ from yt_dlp.utils._utils import _UnsafeExtensionError  # noqa: E402
 _UnsafeExtensionError.ALLOWED_EXTENSIONS = frozenset((*_UnsafeExtensionError.ALLOWED_EXTENSIONS, 'txt'))
 
 
+# XXX: need to disable allowed keys validation in `expect_info_dict` when testing
+# https://github.com/yt-dlp/yt-dlp/pull/12299
+
 class AppleMusicBaseIE(InfoExtractor):
     _VALID_URL = False
     _VALID_URL_BASE = r'^https?://(?:(?:geo|beta)\.)?music\.apple\.com/'
 
+    _PER_PAGE_MAX = 100
     _SUPPRESS_AUTH = {'Authorization': '', 'Media-User-Token': '', 'X-Dsid': ''}
     _SUPPRESS_USER_AUTH = {'Media-User-Token': '', 'X-Dsid': ''}
     _api_headers = {'Origin': 'https://music.apple.com'}
@@ -129,6 +133,19 @@ class AppleMusicBaseIE(InfoExtractor):
         # should not return 401
         return self._download_json(*args, expected_status=expected_status,
                                    headers={**self._api_headers, **headers}, **kwargs)
+
+    def _paginate_api_json(self, root: str, path: str, query: dict, *args, **kwargs):
+        # 'limit' must be set via 'query=' and not in the URL directly because 'next' only contains
+        # the 'offset' parameter and nothing else
+        query.setdefault('limit', self._PER_PAGE_MAX)
+        url = root + path
+        while True:
+            resp = self._download_api_json(url, *args, query=query, **kwargs)
+            yield from traverse_obj(resp, ('data', ...))
+            if next_ := resp.get('next'):
+                url = root + next_
+            else:
+                return
 
     def _extract_thumbnail(self, obj):
         return traverse_obj(obj, {
@@ -725,6 +742,87 @@ class AppleMusicAlbumIE(AppleMusicBaseIE):
             'id': album_id,
             **metadata,
             'thumbnails': [self._extract_thumbnail(traverse_obj(album, ('attributes', 'artwork')))],
+        }
+
+
+class AppleMusicSeeAllIE(AppleMusicBaseIE):
+    IE_NAME = 'applemusic:seeall'
+    _VALID_URL = AppleMusicBaseIE._VALID_URL_BASE + (
+        r'(?P<region>[a-z]{2})/artist/.+/(?P<artist_id>[0-9]+)/see-all.*'
+        r'(?:\?|&)section=(?P<section>(?:appears-on|compilation|featured|full|live)-albums|singles)')
+    _TESTS = [{
+        'url': 'https://music.apple.com/tr/artist/daft-punk/5468295/see-all?section=live-albums',
+        'info_dict': {
+            'id': '5468295',
+        },
+        'playlist': [
+            {'info_dict': {
+                'title': 'Alive 2007',
+                'id': '717067737',
+                '_type': 'url',
+                'url': 'https://music.apple.com/tr/album/alive-2007/717067737',
+                'album_id': '717067737',
+                'copyright': 'Distributed exclusively by Warner Music France / ADA France, ℗ 2007 Daft Life Ltd.',
+                'is_apple_digital_master': False,
+                'record_label': 'Daft Life Ltd./ADA France',
+                'track_count': 13,
+                'upc': '5099951165857',
+                'description': 'md5:e104b0fa416195ba9587d41fccbfe740',
+                'genres': ['Dance', 'Music', 'Electronic', 'Electronica', 'House'],
+                'release_date': '20071114',
+            }},
+            {'info_dict': {
+                'title': 'Alive 1997',
+                'id': '742967894',
+                '_type': 'url',
+                'url': 'https://music.apple.com/tr/album/alive-1997/742967894',
+                'album_id': '742967894',
+                'copyright': 'Distributed exclusively by Warner Music France / ADA France, ℗ 2001 Daft Life Ltd.',
+                'is_apple_digital_master': False,
+                'record_label': 'Daft Life Ltd./ADA France',
+                'track_count': 1,
+                'upc': '0724381113950',
+                'genres': ['Dance', 'Music', 'House', 'Electronic', 'Electronica'],
+                'album_type': 'Single',
+                'release_date': '20011001',
+            }},
+        ],
+        'playlist_count': 2,
+        'params': {'extract_flat': True},
+    }, {
+        'url': 'https://music.apple.com/tr/artist/daft-punk/5468295/see-all?section=appears-on-albums',
+        'only_matching': True,
+    }, {
+        'url': 'https://music.apple.com/tr/artist/daft-punk/5468295/see-all?section=compilation-albums',
+        'only_matching': True,
+    }, {
+        'url': 'https://music.apple.com/tr/artist/daft-punk/5468295/see-all?section=featured-albums',
+        'only_matching': True,
+    }, {
+        'url': 'https://music.apple.com/tr/artist/daft-punk/5468295/see-all?section=full-albums',
+        'only_matching': True,
+    }, {
+        'url': 'hhttps://music.apple.com/tr/artist/daft-punk/5468295/see-all?section=singles',
+        'only_matching': True,
+    }]
+
+    def _real_extract(self, url):
+        region, artist_id, section = self._match_valid_url(url).groups()
+
+        # Ref: https://developer.apple.com/documentation/applemusicapi/get-a-catalog-artist
+        albums = self._paginate_api_json(
+            'https://amp-api.music.apple.com', f'/v1/catalog/{region}/artists/{artist_id}/view/{section}',
+            query=self._get_lang_query(url) or {}, video_id=artist_id, headers=self._SUPPRESS_USER_AUTH, fatal=True)
+        return {
+            '_type': 'playlist',
+            'entries': ({
+                '_type': 'url',
+                'id': album.get('id'),
+                **self._extract_common_metadata(album),
+                **self._extract_album_metadata(album),
+                'url': traverse_obj(album, ('attributes', 'url')),
+            } for album in albums),
+            'id': artist_id,
         }
 
 
