@@ -76,13 +76,14 @@ class DisneyPlusBaseIE(InfoExtractor):
 
 
 class DisneyPlusIE(DisneyPlusBaseIE):
+    IE_NAME = 'disneyplus'
     _VALID_URL = (r'^https?://(?:www\.)?disneyplus\.com/play/'
                   r'(?P<id>[0-9a-f]{8}\b(?:-[0-9a-f]{4}\b){3}-[0-9a-f]{12})')
     _BAMSDK_HEADERS = {
         'Accept': 'application/vnd.media-service+json',
         'Content-Type': 'application/json',
         'X-Dss-Edge-Accept': 'vnd.dss.edge+json; version=2',
-        'X-BAMSDK-VERSION': '28.4',
+        'X-BAMSDK-VERSION': '32.6',
         'X-Bamsdk-Client-Id': 'disney-svod-3d9324fc',
         'X-BAMSDK-PLATFORM': 'javascript/windows/chrome',
         'X-Dss-Feature-Filtering': 'true',
@@ -203,7 +204,7 @@ class DisneyPlusIE(DisneyPlusBaseIE):
             'season_number': ('seasonSequenceNumber', {int_or_none}),
             'season_id': ('seasonId', {str}),
             'season': ('text', 'title', 'full', 'season', 'default', 'content', {str}),
-            'episode_number': ('episodeNumber', 'episodeSequenceNumber', {int_or_none}),
+            'episode_number': (('episodeNumber', 'episodeSequenceNumber'), {int_or_none}, any),
             'description': ('text', 'description', ('full', 'medium', 'brief'), 'program', 'default', 'content', {str}, any),
             # 'creators': ('participant', ('Creator', 'Director', 'Producer'), ..., 'displayName', {str}),
             'creators': ('participant', 'Creator', ..., 'displayName', {str}),
