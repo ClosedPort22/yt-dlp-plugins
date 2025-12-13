@@ -96,7 +96,7 @@ class AppleMusicBaseIE(InfoExtractor):
 
     def _get_anonymous_token(self, video_id):
         webpage = self._download_webpage('https://beta.music.apple.com/', video_id, 'Retrieving anonymous token')
-        path = self._search_regex(r'/(assets/index-legacy-[^/]+\.js)', webpage, name='path to JavaScript file')
+        path = self._search_regex(r'/(assets/index~[^/]+\.js)', webpage, name='path to JavaScript file')
         js = self._download_webpage(f'https://beta.music.apple.com/{path}', video_id, 'Downloading JavaScript file')
         return self._search_regex(r'"(eyJh[^"]+)', js, 'anonymous token')
 
