@@ -19,7 +19,7 @@ class MP4BoxPostProcessingError(PostProcessingError):
 
 
 class MP4BoxPP(PostProcessor):
-    def __init__(self, downloader=None, path='mp4box',
+    def __init__(self, downloader=None, path='MP4Box',
                  embed_metadata=True, embed_thumbnail=False, embed_credits=False):
         super().__init__(downloader)
         self._path = path
