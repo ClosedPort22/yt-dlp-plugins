@@ -79,8 +79,8 @@ class AppleMusicBaseIE(InfoExtractor):
 
     @functools.cached_property
     def _format_thumbnail_url(self):
-        max_width = self._configuration_arg('max_thumbnail_width', ['12000'])[0]
-        max_height = self._configuration_arg('max_thumbnail_height', ['12000'])[0]
+        max_width = self._configuration_arg('max_thumbnail_width', ['10000'])[0]
+        max_height = self._configuration_arg('max_thumbnail_height', ['10000'])[0]
         extension = self._configuration_arg('thumbnail_extension', ['jpg'])[0]
         quality = self._configuration_arg('thumbnail_quality', ['999'])[0]
 
