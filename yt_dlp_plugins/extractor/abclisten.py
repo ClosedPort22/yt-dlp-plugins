@@ -152,7 +152,7 @@ class ABCListenAudiobookEpisodeIE(ABCListenAudiobookBaseIE):
             'description': ('caption', 'plainText', {str}),
             'duration': ('duration', {int_or_none}),
             'thumbnail': ('thumbnailLink', 'cropInfo', ..., 'value', ..., 'url',
-                            {lambda x: x.partition('?')[0]}, {url_or_none}, any),
+                          {lambda x: x.partition('?')[0]}, {url_or_none}, any),
             'formats': ('renditions', ..., {
                 'vcodec': {lambda _: 'none'},
                 'ext': ('contentType', {mimetype2ext}),

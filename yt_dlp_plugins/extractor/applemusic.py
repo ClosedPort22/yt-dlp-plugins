@@ -59,7 +59,7 @@ def ttml2txt(ttml):
         replace("<div", "<br/><br/><div"))
 
 
-from yt_dlp.utils._utils import _UnsafeExtensionError  # noqa: E402
+from yt_dlp.utils._utils import _UnsafeExtensionError
 
 # allow "txt"
 _UnsafeExtensionError.ALLOWED_EXTENSIONS = frozenset((*_UnsafeExtensionError.ALLOWED_EXTENSIONS, 'txt'))
