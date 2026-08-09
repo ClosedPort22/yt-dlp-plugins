@@ -198,9 +198,9 @@ class AppleMusicIE(AppleMusicBaseIE):
         r'(?:song/.+/(?P<song_id>[0-9]+)|album/.+/(?P<album_id>[0-9]+).*'
         r'(?:\?|&)i=(?P<song_id_2>[0-9]+))')
     _TESTS = [{
-        'url': 'https://music.apple.com/us/album/joyride/1754468855?i=1754468856',
+        'url': 'https://music.apple.com/us/album/joyride/1770184671?i=1770184672',
         'info_dict': {
-            'id': '1754468856',
+            'id': '1770184672',
             'ext': 'm4a',
         },
         'params': {'skip_download': True},
@@ -295,7 +295,7 @@ class AppleMusicIE(AppleMusicBaseIE):
             'media_type': 'song',
             'isrc': 'CHC991700022',
             'credits': {
-                'Performer': ['Daniel Mark Paget Shaw'],
+                'Performer': ['Daniel M. P. Shaw'],
                 'Songwriter': ['Daniel Mark Paget Shaw'],
             },
         },
@@ -490,15 +490,15 @@ class AppleMusicAlbumIE(AppleMusicBaseIE):
     _VALID_URL = AppleMusicBaseIE._VALID_URL_BASE + \
         r'(?P<region>[a-z]{2})/album/.+/(?P<album_id>[0-9]+)(?:(?!(?:\?|&)i=[0-9]+).)*$'
     _TESTS = [{
-        'url': 'https://music.apple.com/us/album/joyride/1754468855',
+        'url': 'https://music.apple.com/us/album/joyride/1770184671',
         'info_dict': {
-            'id': '1754468855',
+            'id': '1770184671',
             'title': 'JOYRIDE - Single',
             'release_date': '20240704',
             'age_limit': 18,
             'genres': ['Pop', 'Music'],
             'is_apple_digital_master': False,
-            'album_id': '1754468855',
+            'album_id': '1770184671',
             'upc': '8721093407898',
             'record_label': 'Kesha Records',
             'track_count': 1,
@@ -762,14 +762,15 @@ class AppleMusicSeeAllIE(AppleMusicBaseIE):
                 '_type': 'url',
                 'url': 'https://music.apple.com/tr/album/alive-2007/717067737',
                 'album_id': '717067737',
-                'copyright': 'Distributed exclusively by Warner Music France / ADA France, ℗ 2007 Daft Life Ltd.',
+                'copyright': '℗ 2007 Daft Life Limited',
                 'is_apple_digital_master': False,
                 'record_label': 'Daft Life Ltd./ADA France',
                 'track_count': 13,
                 'upc': '5099951165857',
                 'description': 'md5:e104b0fa416195ba9587d41fccbfe740',
-                'genres': ['Dance', 'Music', 'Electronic', 'Electronica', 'House'],
+                'genres': ['Dance', 'Music'],
                 'release_date': '20071114',
+                'age_limit': 18,
             }},
             {'info_dict': {
                 'title': 'Alive 1997',
