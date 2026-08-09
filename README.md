@@ -6,8 +6,8 @@ Plugins for yt-dlp
 
 #### applemusic, applemusicalbum
 
-- `max_thumbnail_width`: Defaults to `12000`
-- `max_thumbnail_height`: Defaults to `12000`
+- `max_thumbnail_width`: Defaults to `10000` (maximum allowed width)
+- `max_thumbnail_height`: Defaults to `10000` (maximum allowed height)
 - `thumbnail_extension`: Defaults to `jpg`
 - `thumbnail_quality`: Must be an integer between `0` and `999`. Higher is
   better. Defaults to `999`
@@ -32,7 +32,7 @@ provided URL differs from your account's region setting.
 This postprocessor is intended to be used alongside the Apple Music extractors.
 
 - `embed_metadata`: Whether to embed metadata in the file. Specify `mutagen` to
-  embed extended metadata using `mutagen`. Embedding is done using `mp4box`
+  embed extended metadata using `mutagen`. Embedding is done using `MP4Box`
   where possible, so the majority of the metadata fields can still be embedded
   even if `mutagen` is unavailable (see `mp4box.py` for details on which fields
   are embedded and when).
@@ -45,8 +45,8 @@ This postprocessor is intended to be used alongside the Apple Music extractors.
   the URL (e.g. `?l=en-GB`) and the region's default language, since Apple
   returns localized names. Important note: if a localized key contains non-Latin
   characters, it will be silently ignored.
-- `path`: Path to the executable. Defaults to `mp4box`, which will only work if
-  `mp4box` is in your `PATH`.
+- `path`: Path to the executable. Defaults to `MP4Box`, which will only work if
+  `MP4Box` is in your `PATH`.
 
 `embed_metadata` and `embed_thumbnail` will be done in the same step if both are
 specified.
